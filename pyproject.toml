@@ -1,0 +1,19 @@
+[project]
+name = "judgelens"
+version = "0.1.0"
+description = "A model-agnostic framework for quantifying and correcting systematic biases in LLM-as-judge evaluation pipelines."
+authors = [
+    {name = "suryanox"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.11"
+packages = [{ include = "judgelens", from = "src" }]
+dependencies = [
+    "litellm>=1.0.0,<=1.70.0"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
