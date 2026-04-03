@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tools
+        run: |
+          pip install --upgrade pip build twine toml
+
+      - name: Get version from pyproject.toml
+        id: version
+        run: |
+          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['project']['version'])")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "TAG=v$VERSION" >> $GITHUB_ENV
+
+      - name: Check if tag exists
+        id: tagcheck
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "TAG_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Skip if already released
+        if: env.TAG_EXISTS == 'true'
+        run: |
+          echo "Tag $TAG already exists. Skipping release."
+          exit 0
+
+      - name: Build package
+        if: env.TAG_EXISTS == 'false'
+        run: python -m build
+
+      - name: Publish to PyPI
+        if: env.TAG_EXISTS == 'false'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TOKEN }}
+        run: twine upload dist/*
+
+      - name: Create and push tag
+        if: env.TAG_EXISTS == 'false'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git tag $TAG
+          git push origin $TAG
